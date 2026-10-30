@@ -335,7 +335,7 @@ function coachSuggestion(m){
  'General fitness':[['Full body A',[['Bodyweight squat','3','10','60 sec'],['Incline push-up','3','8','60 sec'],['Seated row','3','12','60 sec']]],['Full body B',[['Step-up','3','8/side','60 sec'],['Dumbbell press','3','10','60 sec'],['Dead bug','3','8/side','45 sec']]]]
  };
  const chosen=base[m.goal]||base['General fitness'];
- const count=Math.min(m.daysPerWeek,chosen.length);
+ const count=Math.max(1,Math.min(7,Number(m.daysPerWeek)||3));
  return Array.from({length:count},(_,i)=>({name:'Day '+(i+1)+' · '+chosen[i%chosen.length][0],exercises:chosen[i%chosen.length][1].map(e=>({name:e[0],sets:e[1],reps:e[2],rest:e[3],cue:''}))}));
 }
 views.coaching=()=>{
@@ -357,8 +357,9 @@ function coachRenderDays(){
 function coachAddDay(){
  const n=coachDraftDays.length+1;coachDraftDays.push({name:'Day '+n+' · Training focus',exercises:[]});render();
 }
+function coachSetDayCount(value){const n=Math.max(1,Math.min(6,Number(value)||3));while(coachDraftDays.length<n)coachDraftDays.push({name:'Day '+(coachDraftDays.length+1)+' · Training focus',exercises:[]});while(coachDraftDays.length>n)coachDraftDays.pop();render();}
 function coachRemoveDay(i){coachDraftDays.splice(i,1);render()}
-function coachRenameDay(i,value){coachDraftDays[i].name=value;}
+function coachRenameDay(i,value){coachDraftDays[i].name=String(value||'').trim()||('Day '+(i+1));}
 function coachAddExercise(i){
  const name=$('ceName'+i)?.value.trim(),sets=$('ceSets'+i)?.value.trim(),reps=$('ceReps'+i)?.value.trim();
  if(!name||!sets||!reps)return ping('Enter exercise, sets and reps before adding');
