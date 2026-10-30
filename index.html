@@ -350,7 +350,7 @@ views.coaching=()=>{
 };
 function coachRenderDays(){
  if(!coachDraftDays.length)return '<div class="coach-empty">No training days yet. Generate an outline or add a day.</div>';
- return coachDraftDays.map((d,i)=>'<div class="coach-day"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h4>'+coachEsc(d.name)+'</h4><button class="soft" onclick="coachRemoveDay('+i+')">Remove day</button></div>'+
+ return coachDraftDays.map((d,i)=>'<div class="coach-day"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><input aria-label="Training day name" value="'+coachEsc(d.name)+'" onchange="coachRenameDay('+i+',this.value)" style="font-weight:800"><button class="soft" onclick="coachRemoveDay('+i+')">Remove day</button></div>'+
  d.exercises.map((e,j)=>'<div class="coach-exercise"><div><b>'+coachEsc(e.name)+'</b><small>'+coachEsc(e.sets)+' sets × '+coachEsc(e.reps)+' · Rest '+coachEsc(e.rest)+'</small>'+(e.cue?'<small>'+coachEsc(e.cue)+'</small>':'')+'</div><button class="soft" onclick="coachRemoveExercise('+i+','+j+')">×</button></div>').join('')+
  '<div class="coach-fields">'+coachField('Exercise','ceName'+i,'','e.g. Dumbbell press')+coachField('Sets','ceSets'+i,'3','3','number')+coachField('Reps / duration','ceReps'+i,'10','8–12')+coachField('Rest','ceRest'+i,'60 sec','60 sec')+'<div class="span2">'+coachField('Trainer cue (optional)','ceCue'+i,'','Tempo, range, technique cue')+'</div></div><button class="soft" style="margin-top:9px" onclick="coachAddExercise('+i+')">Add exercise to '+coachEsc(d.name)+'</button></div>').join('');
 }
