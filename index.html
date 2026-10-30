@@ -290,7 +290,7 @@ function coachMember(id){return demo.members.find(m=>m.id===id)||demo.members[0]
 function coachProgram(id){return demo.programs.find(p=>p.memberId===id&&p.status==='published')||null}
 function coachEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function coachField(label,id,value,placeholder='',type='text'){return '<div><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+type+'" value="'+coachEsc(value||'')+'" placeholder="'+coachEsc(placeholder)+'"></div>'}
-function openCoachMember(id){selectedCoachMember=id;coachDraftExercises=[];coachDraftDays=[];coachBuilderDay=0;go('coaching')}
+function openCoachMember(id){selectedCoachMember=id;coachDraftExercises=[];const saved=demo.programs.find(p=>p.memberId===id&&p.status==='draft')||coachProgram(id);coachDraftDays=saved?saved.days.map(d=>({name:d.name,exercises:d.exercises.map(e=>({...e}))})):[];coachBuilderDay=0;go('coaching')}
 function trainerForMember(id){const m=coachMember(id);return m?.trainer||'Unassigned'}
 function memberCoachProfile(m){
   const p=coachProgram(m.id);
@@ -346,7 +346,7 @@ views.coaching=()=>{
  '<div class="coach-hero"><div><span class="eyebrow">PERSONAL PROGRAMME DESIGN</span><h2>'+coachEsc(m.name)+'</h2><p>'+coachEsc(m.goal)+' · '+coachEsc(m.level)+' · '+m.daysPerWeek+' days/week · '+m.sessionMinutes+' minutes/session</p><span class="coach-badge">'+(current?'PUBLISHED PLAN ACTIVE':'NO ACTIVE PLAN')+'</span></div><div class="coach-stat"><span class="muted">CURRENT COACH</span><b style="font-size:19px">'+coachEsc(m.trainer)+'</b><span class="muted">Member ID '+coachEsc(m.id)+'</span></div></div>'+
  '<div class="coach-grid"><section class="card"><h3>Member needs & constraints</h3><div class="row"><span>Goal</span><b>'+coachEsc(m.goal)+'</b></div><div class="row"><span>Experience</span><b>'+coachEsc(m.level)+'</b></div><div class="row"><span>Availability</span><b>'+m.daysPerWeek+' days · '+m.sessionMinutes+' min</b></div><div class="row"><span>Preferences</span><b>'+coachEsc(m.preferences)+'</b></div><div class="row"><span>Limitations / avoid</span><b>'+coachEsc(m.limitations)+'</b></div><button class="soft" onclick="coachGenerateSuggestion()">Generate editable starting outline</button><div class="coach-note">Suggestions are rule-based demo templates, not an AI assessment or medical prescription. Check suitability, technique, loads and progression before publishing.</div></section>'+
  '<section class="card"><h3>Programme setup</h3><label for="coachProgramName">Programme name</label><input id="coachProgramName" value="'+coachEsc(drafts[0]?.name||current?.name||m.goal+' · Personal plan')+'"><div class="coach-fields"><div><label for="coachGoal">Training focus</label><select id="coachGoal">'+['Lose body fat','Build muscle','Build strength','Improve endurance','Improve mobility','General fitness'].map(x=>'<option '+(m.goal===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div><div><label for="coachDays">Training days</label><select id="coachDays">'+[2,3,4,5,6].map(x=>'<option '+((drafts[0]?.days.length||current?.days.length||m.daysPerWeek)===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div><div><label for="coachDuration">Session minutes</label><input id="coachDuration" type="number" min="15" max="180" value="'+(drafts[0]?.sessionMinutes||current?.sessionMinutes||m.sessionMinutes)+'"></div><div><label for="coachLevel">Member level</label><select id="coachLevel">'+['Beginner','Intermediate','Advanced'].map(x=>'<option '+(m.level===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div></div><div class="coach-tabs"><button class="soft" onclick="coachAddDay()">＋ Add training day</button><button class="soft" onclick="coachClearDraft()">Clear editor</button></div><div id="coachDayEditor">'+coachRenderDays()+'</div><button class="primary" onclick="coachSaveProgram()">Save as draft</button> <button class="soft" onclick="coachPublishProgram()">Publish to member</button></section></div>'+
- '<section class="card" style="margin-top:14px"><h3>Programme history</h3>'+demo.programs.filter(p=>p.memberId===m.id).map(p=>'<div class="row"><div><b>'+coachEsc(p.name)+'</b><small class="muted" style="display:block">'+coachEsc(p.goal)+' · '+p.days.length+' days · '+coachEsc(p.status)+'</small></div><span class="coach-badge">'+coachEsc(p.status.toUpperCase())+'</span></div>').join('')||'<div class="coach-empty">No programmes saved for this member yet.</div>'+'</section>';
+ '<section class="card" style="margin-top:14px"><h3>Programme history</h3>'+(demo.programs.filter(p=>p.memberId===m.id).length?demo.programs.filter(p=>p.memberId===m.id).map(p=>'<div class="row"><div><b>'+coachEsc(p.name)+'</b><small class="muted" style="display:block">'+coachEsc(p.goal)+' · '+p.days.length+' days · '+coachEsc(p.status)+'</small></div><span class="coach-badge">'+coachEsc(p.status.toUpperCase())+'</span></div>').join(''):'<div class="coach-empty">No programmes saved for this member yet.</div>')+'</section>';
 };
 function coachRenderDays(){
  if(!coachDraftDays.length)return '<div class="coach-empty">No training days yet. Generate an outline or add a day.</div>';
@@ -358,6 +358,7 @@ function coachAddDay(){
  const n=coachDraftDays.length+1;coachDraftDays.push({name:'Day '+n+' · Training focus',exercises:[]});render();
 }
 function coachRemoveDay(i){coachDraftDays.splice(i,1);render()}
+function coachRenameDay(i,value){coachDraftDays[i].name=value;}
 function coachAddExercise(i){
  const name=$('ceName'+i)?.value.trim(),sets=$('ceSets'+i)?.value.trim(),reps=$('ceReps'+i)?.value.trim();
  if(!name||!sets||!reps)return ping('Enter exercise, sets and reps before adding');
@@ -367,7 +368,7 @@ function coachAddExercise(i){
 function coachRemoveExercise(i,j){coachDraftDays[i].exercises.splice(j,1);render()}
 function coachClearDraft(){coachDraftDays=[];render()}
 function coachGenerateSuggestion(){
- const m=coachMember(selectedCoachMember);coachDraftDays=coachSuggestion(m);$('coachProgramName').value=m.goal+' · '+m.level+' personal plan';render();ping('Editable outline generated — trainer review required');
+ const m=coachMember(selectedCoachMember);coachDraftDays=coachSuggestion(m);render();$('coachProgramName').value=m.goal+' · '+m.level+' personal plan';ping('Editable outline generated — trainer review required');
 }
 function coachBuildRecord(status){
  const m=coachMember(selectedCoachMember),name=$('coachProgramName').value.trim(),goal=$('coachGoal').value,days=coachDraftDays.map(d=>({name:d.name,exercises:d.exercises.map(e=>({...e}))}));
