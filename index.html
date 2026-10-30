@@ -281,6 +281,7 @@ demo.members.forEach((m,i)=>{
   m.trainer=m.trainer||'Unassigned';
 });
 let selectedCoachMember=demo.members[0]?.id||'GF-2401';
+let activeMemberId=demo.members[0]?.id||'GF-2401';
 let coachDraftExercises=[];
 let coachDraftDays=[];
 let coachBuilderDay=0;
@@ -296,8 +297,17 @@ function memberCoachProfile(m){
   const p=coachProgram(m.id);
   return '<div class="coach-hero"><div><span class="eyebrow">GREEN FITNESS / PERSONAL COACHING</span><h2>Your plan.<br><em>Your pace.</em></h2><p>Your trainer builds a programme around your goal, experience, schedule and feedback. Your plan changes as you progress.</p><span class="coach-badge">'+(p?'ACTIVE PERSONAL PROGRAMME':'PROFILE AWAITING TRAINER PLAN')+'</span></div><div class="coach-stat"><span class="muted">YOUR PERSONAL TRAINER</span><b style="font-size:20px">'+coachEsc(m.trainer)+'</b><span class="muted">'+coachEsc(m.goal)+' · '+coachEsc(m.level)+'</span><div class="coach-progress"><i style="width:'+(p?'65':'12')+'%"></i></div><small class="muted">'+(p?'Your programme is ready':'Complete your profile to help your trainer plan')+'</small></div></div>';
 }
+views.home=()=>{
+ const m=coachMember(activeMemberId),p=coachProgram(activeMemberId),logs=demo.sessionLogs.filter(x=>x.memberId===activeMemberId);
+ return header('Good morning, '+coachEsc(m.name.split(' ')[0]),'Your Green Fitness training space · '+coachEsc(m.goal))+
+ '<section class="member-hero"><div><span class="eyebrow">YOUR PERSONAL TRAINING JOURNEY</span><h2>Show up.<br><em>Get stronger.</em></h2><p>Your programme is built around your goals and reviewed by '+coachEsc(m.trainer)+'.</p><button class="primary" onclick="go(\'coach\')">Open my coaching plan →</button></div><div class="hero-orbit"><div class="orbit-core">GF<small>COACHED</small></div></div></section>'+
+ '<div class="section-heading"><div><span class="eyebrow">YOUR MEMBERSHIP</span><h2>Member pass</h2></div><span class="tag">'+coachEsc(m.status.toUpperCase())+'</span></div>'+
+ '<div class="membercard"><div class="pass-top"><b>GF · DIGITAL MEMBER PASS</b><span>'+coachEsc(m.id)+'</span></div><h2>'+coachEsc(m.name)+'</h2><div class="pass-details"><div><small>MEMBERSHIP PLAN</small><b>'+coachEsc(m.plan)+'</b></div><div><small>VALID UNTIL</small><b>'+coachEsc(m.expiry)+'</b></div><div><small>PERSONAL TRAINER</small><b>'+coachEsc(m.trainer)+'</b></div><div><small>TRAINING GOAL</small><b>'+coachEsc(m.goal)+'</b></div></div><div class="pass-footer"><span>DEMO MEMBER PASS · '+coachEsc(m.id)+'</span><span>GREEN FITNESS</span></div></div>'+
+ '<div class="grid stats">'+stat('Training goal',coachEsc(m.goal),'Your personal focus')+stat('Weekly target',m.daysPerWeek+' days','Planned with your coach')+stat('Completed sessions',logs.length,'Saved training history')+stat('Programme',p?'Active':'Awaiting coach','Trainer approved')+'</div>'+
+ '<div class="grid cols"><div class="card"><div class="card-kicker">YOUR NEXT STEP</div><h3>'+(p?coachEsc(p.name):'Complete your training profile')+'</h3><p class="muted">'+(p?p.days.length+' training days · '+p.sessionMinutes+' minutes per session':'Tell your trainer about your goal, experience and availability.')+'</p><button class="primary" onclick="go(\''+(p?'workout':'coach')+'\')">'+(p?'View my training plan':'Set up my profile')+' →</button></div><div class="card"><div class="card-kicker">YOUR PERSONAL COACH</div><h3>'+coachEsc(m.trainer)+'</h3><p class="muted">Your trainer reviews your programme and adjusts it as your progress and feedback change.</p><button class="soft" onclick="go(\'coach\')">View coaching profile</button></div></div>';
+};
 views.coach=()=>{
- const m=demo.members[0],p=coachProgram(m.id);
+ const m=coachMember(activeMemberId),p=coachProgram(activeMemberId);
  return header('My personal coaching','A programme shaped around your goals — reviewed by your Green Fitness trainer')+
  memberCoachProfile(m)+
  '<div class="coach-grid"><section class="card"><h3>Your training profile</h3><p class="muted">Keep your trainer informed. Changes are saved in this browser demo.</p><div class="coach-fields">'+
@@ -318,8 +328,9 @@ views.roster=()=>{
  demo.members.map(m=>{const p=coachProgram(m.id);return '<div class="coach-member"><div class="avatar">'+coachEsc(m.name.split(' ').map(x=>x[0]).join(''))+'</div><div class="member-main"><b>'+coachEsc(m.name)+'</b><small>'+coachEsc(m.goal)+' · '+coachEsc(m.level)+' · '+m.daysPerWeek+' days/week</small><small>'+coachEsc(m.trainer)+' · '+(p?'Plan published':'No published plan')+'</small></div><span class="coach-badge">'+(p?'ACTIVE PLAN':'NEEDS PLAN')+'</span><button class="primary" onclick="openCoachMember(\''+m.id+'\')">Open profile →</button></div>'}).join('')+'</div>'+
  '<div class="coach-note">Caseload guidance: the demo uses an 8-member planning limit per trainer. This is an operational prompt, not a live enforced staffing rule. Do not assign beyond a trainer’s safe capacity.</div>';
 };
+function setActiveMember(id){activeMemberId=id;render()}
 function saveMemberTrainingProfile(){
- const m=demo.members[0];if(!m)return;
+ const m=coachMember(activeMemberId);if(!m)return;
  const days=Math.max(1,Math.min(7,Number($('memberDays').value)||3));
  const mins=Math.max(15,Math.min(180,Number($('memberMinutes').value)||45));
  m.goal=$('memberGoal').value;m.level=$('memberLevel').value;m.daysPerWeek=days;m.sessionMinutes=mins;m.preferences=$('memberPrefs').value.trim();m.limitations=$('memberLimits').value.trim();
@@ -403,7 +414,7 @@ function coachApproveDraft(id){
  p.status='published';p.approvedBy=p.trainer;p.approvedAt=new Date().toISOString();save();render();ping('Approved — programme is now visible to the member');
 }
 views.workout=()=>{
- const m=demo.members[0],p=coachProgram(m.id);
+ const m=coachMember(activeMemberId),p=coachProgram(activeMemberId);
  if(!p)return header('My workouts','Your assigned trainer programme will appear here')+'<div class="coach-empty">No personal programme has been published yet. Open My coach to update your goals and preferences.</div><button class="primary" onclick="go(\'coach\')">Open my coaching profile</button>';
  return header('My training plan','A personal programme approved by '+coachEsc(p.trainer))+
  '<div class="coach-hero"><div><span class="eyebrow">YOUR CURRENT PROGRAMME</span><h2>'+coachEsc(p.name)+'</h2><p>'+coachEsc(p.goal)+' · '+p.days.length+' training days · '+p.sessionMinutes+' minutes per session</p></div><div class="coach-stat"><span class="muted">PROGRAMME STATUS</span><b>ACTIVE</b><span class="muted">Coach approved</span></div></div>'+
@@ -415,7 +426,7 @@ function memberCompleteSession(programId,dayIndex){
  demo.sessionLogs.unshift({programId,memberId:p.memberId,day:p.days[dayIndex].name,date:new Date().toLocaleDateString(),completedAt:new Date().toISOString()});save();ping('Session completion saved');render();
 }
 views.progress=()=>{
- const m=demo.members[0],logs=demo.sessionLogs.filter(x=>x.memberId===m.id),target=m.daysPerWeek||3;
+ const m=coachMember(activeMemberId),logs=demo.sessionLogs.filter(x=>x.memberId===m.id),target=m.daysPerWeek||3;
  return header('Your progress','Training consistency and completed personal sessions')+
  '<div class="grid stats">'+stat('Completed sessions',logs.length,'Personal plan history')+stat('Weekly target',target+' days','Set with your trainer')+stat('Current goal',coachEsc(m.goal),'Member profile')+stat('Assigned coach',coachEsc(m.trainer),'Personal coaching')+'</div>'+
  '<div class="card"><h3>Completed training sessions</h3>'+(logs.length?logs.map(l=>'<div class="row"><b>'+coachEsc(l.day)+'</b><span>'+coachEsc(l.date)+' · Completed</span></div>').join(''):'<div class="coach-empty">Your completed sessions will appear here.</div>')+'</div>';
