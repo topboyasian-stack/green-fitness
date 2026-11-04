@@ -4,6 +4,8 @@
 
 This folder contains a risk-based test plan, 26 structured test cases, defect-reporting examples, accessibility and release checklists, a test execution report template, and a small Python utility that validates test-case documentation.
 
+**Portfolio folder:** https://github.com/topboyasian-stack/green-fitness/tree/qa-portfolio/qa-portfolio
+
 - Candidate: David Egwu, Lagos, Nigeria
 - Email: davidegwu5@gmail.com
 - Phone: +234 815 619 6053
